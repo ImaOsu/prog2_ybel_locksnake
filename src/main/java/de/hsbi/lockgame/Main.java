@@ -17,7 +17,9 @@ public class Main {
     SwingUtilities.invokeLater(
         () -> {
           try {
-            var level = LevelLoader.loadLevelFromResource(LevelConstants.defaultLevel());
+              System.out.println(Main.class.getResource("/levels/level1.txt"));
+
+              var level = LevelLoader.loadLevelFromResource(LevelConstants.defaultLevel());
             var engine = new GameEngine(level);
 
             var panel = new GamePanel(engine.state(), new Java2DRenderer());
@@ -72,4 +74,8 @@ public class Main {
       frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
   }
+
+
+
+
 }

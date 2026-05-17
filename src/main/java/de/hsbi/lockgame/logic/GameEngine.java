@@ -1,51 +1,82 @@
 package de.hsbi.lockgame.logic;
 
-import de.hsbi.lockgame.model.Direction;
-import de.hsbi.lockgame.model.Level;
+import de.hsbi.lockgame.model.*;
 import de.hsbi.lockgame.ui.GamePanel;
 
-// TODO: Die GameEngine verwaltet den GameState.
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
-// TODO: Die GameEngine wird durch den Timer im main() getriggert ("tick") und lässt den GameState
-// daraufhin einen Schritt ausführen. Dann müssen alle für den GameState registrierten Observer
-// benachrichtigt werden, damit das Spielfeld neu gezeichnet werden kann o.ä.
-
-// TODO: Die GameEngine beobachtet die Tastatureingaben (gesetzt in GamePanel.setupKeyBindings()),
-// die in Direction übersetzt und an GameEngine.update() übergeben werden. Wenn es eine neue Eingabe
-// gibt, wird die "update"-Methode von GameEngine aufgerufen, und die GameEngine muss die
-// Blickrichtung der Schlange aktualisieren und diese GameState-Änderung den für den GameState
-// registrierten Observer mitteilen.
-
-// TODO: Die GameEngine ist ein Observer für Direction: GameEngine.update(Direction)
-// TODO: Die GameEngine ist ein Observable für GameState: GamePanel.update(GameState)
 public final class GameEngine {
 
-  public GameEngine(Level level) {
-    // TODO: lege eine neue GameEngine mit den übergebenen Informationen an
-    throw new UnsupportedOperationException("method not implemented yet");
-  }
+    private GameState state;
+    private final List<Consumer<GameState>> observers = new ArrayList<>();
+    private GamePanel panel;
 
-  public GameState state() {
-    // TODO: gebe den aktuellen Spielzustand zurück
-    throw new UnsupportedOperationException("method not implemented yet");
-  }
+    public GameEngine(Level level) {
 
-  public void setGamePanel(GamePanel panel) {
-    // TODO: Setter
-    throw new UnsupportedOperationException("method not implemented yet");
-  }
+        // Schlange erzeugen
+        List<Position> startBody = new ArrayList<>();
+        startBody.add(level.snakeStart());
+        Snake snake = new Snake(startBody);
 
-  public void update(Direction d) {
-    // TODO: aktualisiere den Blickwinkel der Schlange (GameState)
-    // TODO: benachrichtige alle Observer und gibt den neuen Spielzustand mit (Neuzeichnen der
-    // Spielfläche)
-    throw new UnsupportedOperationException("method not implemented yet");
-  }
+        // Pins übernehmen
+        List<Pin> pins = level.pins();
 
-  public void tick() {
-    // TODO: lass das Spiel (den GameState) einen Schritt ("tick") machen
-    // TODO: benachrichtige alle Observer und gibt den neuen Spielzustand mit (Neuzeichnen der
-    // Spielfläche)
-    throw new UnsupportedOperationException("method not implemented yet");
-  }
+        // Startzustand erzeugen
+        this.state = new GameState(
+            level,
+            snake,
+            pins,
+            GameState.Status.RUNNING,
+            Direction.NONE
+        );
+    }
+
+    public GameState state() {
+        return state;
+    }
+
+    public void setGamePanel(GamePanel panel) {
+        this.panel = panel;
+
+        // GamePanel als Observer registrieren
+        addObserver(panel::update);
+    }
+
+    // Observer registrieren
+    public void addObserver(Consumer<GameState> obs) {
+        observers.add(obs);
+    }
+
+    // Alle Observer benachrichtigen
+    private void notifyObservers() {
+        observers.forEach(o -> o.accept(state));
+    }
+
+    // Wird von der Tastatur (GamePanel) aufgerufen
+    public void update(Direction d) {
+
+        // Neue Blickrichtung setzen → neuer GameState
+        this.state = new GameState(
+            state.level(),
+            state.snake(),
+            state.pins(),
+            state.status(),
+            d
+        );
+
+        // GUI aktualisieren
+        notifyObservers();
+    }
+
+    // Wird vom Timer im main() aufgerufen
+    public void tick() {
+
+        // Spiellogik ausführen
+        this.state = this.state.tick();
+
+        // GUI aktualisieren
+        notifyObservers();
+    }
 }
